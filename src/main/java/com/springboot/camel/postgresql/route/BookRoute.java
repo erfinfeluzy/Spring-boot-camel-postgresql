@@ -22,7 +22,7 @@ public class BookRoute extends RouteBuilder {
     public void configure() throws Exception {
 
         restConfiguration()
-                .contextPath(env.getProperty("camel.component.servlet.mapping.contextPath", "/rest/*"))
+                .contextPath("/rest/*")
                 .apiContextPath("/api-doc")
                 .apiProperty("api.title", "Spring Boot Camel Postgres Rest API.")
                 .apiProperty("api.version", "1.0")
@@ -34,37 +34,43 @@ public class BookRoute extends RouteBuilder {
         rest("/book")
                 .consumes(MediaType.APPLICATION_JSON_VALUE)
                 .produces(MediaType.APPLICATION_JSON_VALUE)
+                
                 .get("/{name}").route()
-                .to("{{route.findBookByName}}")
+                .to("direct:findBookByName")
                 .endRest()
-                .get("/").route()
-                .to("{{route.findAllBooks}}")
+                
+                .get("/all").route()
+                .to("direct:findAllBooks")
                 .endRest()
+                
                 .post("/").route()
                 .marshal().json()
                 .unmarshal(getJacksonDataFormat(Book.class))
-                .to("{{route.saveBook}}")
+                .to("direct:saveBook")
                 .endRest()
+                
                 .delete("/{bookId}").route()
-                .to("{{route.removeBook}}")
+                .to("direct:removeBook")
                 .end();
 
-        from("{{route.findBookByName}}")
+        from("direct:findBookByName")
                 .log("Received header : ${header.name}")
                 .bean(BookService.class, "findBookByName(${header.name})");
 
-        from("{{route.findAllBooks}}")
+        from("direct:findAllBooks")
                 .bean(BookService.class, "findAllBooks");
 
 
-        from("{{route.saveBook}}")
+        from("direct:saveBook")
                 .log("Received Body ${body}")
                 .bean(BookService.class, "addBook(${body})");
 
 
-        from("{{route.removeBook}}")
+        from("direct:removeBook")
                 .log("Received header : ${header.bookId}")
                 .bean(BookService.class, "removeBook(${header.bookId})");
+
+        
     }
 
     private JacksonDataFormat getJacksonDataFormat(Class<?> unmarshalType) {
